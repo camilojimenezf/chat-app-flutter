@@ -83,11 +83,11 @@ class __FormState extends State<_Form> {
                     FocusScope.of(context).unfocus();
                     final isLogged = await authService.login(emailCtrl.text, passCtrl.text);
 
+                    if (!mounted) return;
+
                     if (isLogged) {
                       Navigator.pushReplacementNamed(context, 'usuarios');
                     } else {
-                      // Mostrar alerta.
-                      if (!mounted) return;
                       mostrarAlerta(
                           context, 'Login incorrecto', 'Revise sus credenciales nuevamente');
                     }
