@@ -1,6 +1,7 @@
 import 'package:chat/models/usuarios.dart';
 import 'package:chat/services/auth_service.dart';
 import 'package:chat/services/socket_service.dart';
+import 'package:chat/services/usuarios_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
@@ -11,14 +12,17 @@ class UsuariosPage extends StatefulWidget {
 }
 
 class _UsuariosPageState extends State<UsuariosPage> {
+  final usuarioService = UsuariosService();
   final RefreshController _refreshController = RefreshController(initialRefresh: false);
 
-  final usuarios = [
-    Usuario(online: true, email: 'maria@gmail.com', nombre: 'María', uid: '1'),
-    Usuario(online: true, email: 'jose@gmail.com', nombre: 'Jose', uid: '1'),
-    Usuario(online: false, email: 'rodrigo@gmail.com', nombre: 'Rodrigo', uid: '1'),
-    Usuario(online: true, email: 'pamela@gmail.com', nombre: 'Pamela', uid: '1')
-  ];
+  List<Usuario> usuarios = [];
+
+  @override
+  void initState() {
+    this._cargarUsuarios();
+
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,15 +49,16 @@ class _UsuariosPageState extends State<UsuariosPage> {
         ),
         actions: [
           Container(
-            margin: EdgeInsets.only(right: 10),
-            child: Icon(
-              Icons.check_circle,
-              color: Colors.blue[400],
-            ),
-            // child: Icon(
-            //   Icons.offline_bolt,
-            //   color: Colors.red
-            // )
+            margin: const EdgeInsets.only(right: 10),
+            child: socketService.serverStatus == ServerStatus.Online
+                ? Icon(
+                    Icons.check_circle,
+                    color: Colors.blue[400],
+                  )
+                : const Icon(
+                    Icons.offline_bolt,
+                    color: Colors.red,
+                  ),
           )
         ],
       ),
@@ -98,8 +103,8 @@ class _UsuariosPageState extends State<UsuariosPage> {
   }
 
   void _cargarUsuarios() async {
-    await Future.delayed(Duration(milliseconds: 1000));
-
+    this.usuarios = await usuarioService.getUsuarios();
+    setState(() {});
     _refreshController.refreshCompleted();
   }
 }
