@@ -2,6 +2,7 @@
 
 import 'dart:io';
 
+import 'package:chat/models/mensajes_response.dart';
 import 'package:chat/services/auth_service.dart';
 import 'package:chat/services/chat_service.dart';
 import 'package:chat/services/socket_service.dart';
@@ -35,6 +36,40 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
     this.chatService = Provider.of<ChatService>(context, listen: false);
     this.socketService = Provider.of<SocketService>(context, listen: false);
     this.authService = Provider.of<AuthService>(context, listen: false);
+
+    this.socketService.socket.on('mensaje-personal', _escucharMensaje);
+
+    _cargarHistorial(this.chatService.usuarioPara.uid);
+  }
+
+  void _cargarHistorial(String usuarioID) async {
+    List<Mensaje> chatMessages = await this.chatService.getChat(usuarioID);
+
+    final history = chatMessages.map(
+      (m) => ChatMessage(
+        texto: m.mensaje,
+        uid: m.de,
+        animationController: AnimationController(vsync: this, duration: Duration(milliseconds: 0))
+          ..forward(),
+      ),
+    );
+    setState(() {
+      _messages.insertAll(0, history);
+    });
+  }
+
+  void _escucharMensaje(dynamic payload) {
+    ChatMessage message = ChatMessage(
+      texto: payload['mensaje'],
+      uid: payload['de'],
+      animationController:
+          AnimationController(vsync: this, duration: const Duration(milliseconds: 300)),
+    );
+
+    setState(() {
+      _messages.insert(0, message);
+      message.animationController.forward();
+    });
   }
 
   @override
@@ -149,7 +184,7 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
 
     final newMessage = ChatMessage(
       texto: texto,
-      uid: '123',
+      uid: authService.usuario.uid,
       animationController: AnimationController(
         vsync: this,
         duration: const Duration(milliseconds: 300),
@@ -174,12 +209,10 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    // TODO: Off del socket
-
     for (ChatMessage message in _messages) {
       message.animationController.dispose();
     }
-
+    this.socketService.socket.off('mensaje-personal');
     super.dispose();
   }
 }
